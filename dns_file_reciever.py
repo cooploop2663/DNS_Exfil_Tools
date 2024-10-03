@@ -1,6 +1,7 @@
 import socket
 import re
 import base64
+from dnslib import DNSRecord
 
 # IP and Port to listen on
 UDP_IP = "0.0.0.0"
