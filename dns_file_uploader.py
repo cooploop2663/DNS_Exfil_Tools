@@ -1,35 +1,83 @@
 import socket
+import re
 import base64
 
-# DNS server details
-DNS_SERVER = "your.dns.server.ip"
-DNS_PORT = 53
+# IP and Port to listen on
+UDP_IP = "0.0.0.0"
+UDP_PORT = 53
 
-# File to send
-file_path = "path/to/your/file.ext"
+# Create a UDP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((UDP_IP, UDP_PORT))
 
-def chunk_file(file_data, chunk_size=255):
-    """Splits the file data into chunks of a given size."""
-    return [file_data[i:i + chunk_size] for i in range(0, len(file_data), chunk_size)]
+# Dictionary to store the chunks
+file_chunks = {}
+# Variable to store the file name and extension
+file_name = None
 
-def send_chunk(chunk, sequence_number):
-    """Sends a chunk of the file as a DNS query."""
-    # Base32 encode the chunk
-    encoded_chunk = base64.b32encode(chunk).decode('utf-8')
-    
-    # Create a DNS query using the encoded chunk
-    domain = f"{encoded_chunk}.chunk{sequence_number}.fileupload.yourdomain.com"
-    
-    # Send the DNS query (this is a basic UDP request)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(b"", (DNS_SERVER, DNS_PORT))
+def pad_base32(encoded_str):
+    """Ensure the Base32 encoded string is padded correctly."""
+    missing_padding = len(encoded_str) % 8
+    if missing_padding:
+        encoded_str += '=' * (8 - missing_padding)
+    return encoded_str
 
-with open(file_path, "rb") as file:
-    file_data = file.read()
+def save_file(chunks, file_name):
+    """Reassembles and saves the file from the collected chunks."""
+    with open(file_name, 'wb') as f:
+        for i in sorted(chunks):
+            f.write(chunks[i])
 
-# Chunk the file into smaller pieces
-chunks = chunk_file(file_data)
+print(f"Listening for DNS requests on {UDP_IP}:{UDP_PORT}...")
 
-# Send each chunk as a DNS query
-for i, chunk in enumerate(chunks):
-    send_chunk(chunk, i)
+# Listen for incoming DNS requests
+while True:
+    # Receive data from the socket
+    byteData, addr = sock.recvfrom(2048)  # buffer size is 2048 bytes
+    try:
+        # Parse the DNS message manually (skip parsing for simplicity)
+        domain_name = DNSRecord.parse(byteData).q.qname
+
+        # Convert the DNS name into a string
+        domain_str = str(domain_name)
+
+        # Check if it's the file info message with the file name
+        file_info_match = re.match(r'(.+)\.fileinfo\.fileupload\.yourdomain\.com', domain_str)
+        if file_info_match:
+            file_name = file_info_match.group(1)
+            print(f"Received file name: {file_name}")
+            continue
+
+        # Check if the message is the end-of-transmission signal
+        if domain_str.startswith("end.chunk999.fileupload.yourdomain.com"):
+            print("Received end of transmission signal.")
+            if file_name:
+                # Reassemble and save the file
+                save_file(file_chunks, file_name)
+                print(f"File '{file_name}' reconstructed successfully!")
+            else:
+                print("File name not received, cannot save the file.")
+            # Reset the dictionary for the next file transfer
+            file_chunks.clear()
+            file_name = None
+            continue
+
+        # Regex to extract Base32 encoded chunk and sequence number
+        chunk_match = re.search(r'([A-Z2-7]+)\.chunk(\d+)\.fileupload\.yourdomain\.com', domain_str)
+
+        if chunk_match:
+            encoded_chunk = chunk_match.group(1)
+            sequence_number = int(chunk_match.group(2))
+
+            # Add padding and decode the Base32 string
+            padded_encoded_chunk = pad_base32(encoded_chunk)
+            chunk_data = base64.b32decode(padded_encoded_chunk)
+
+            # Store the chunk data in the dictionary
+            file_chunks[sequence_number] = chunk_data
+            print(f"Received chunk {sequence_number} from {addr}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+        continue
+
