@@ -1,7 +1,6 @@
 import socket
 import re
 import base64
-from dnslib import DNSRecord
 
 # IP and Port to listen on
 UDP_IP = "0.0.0.0"
@@ -36,11 +35,8 @@ while True:
     # Receive data from the socket
     byteData, addr = sock.recvfrom(2048)  # buffer size is 2048 bytes
     try:
-        # Parse the DNS message manually (skip parsing for simplicity)
-        domain_name = DNSRecord.parse(byteData).q.qname
-
-        # Convert the DNS name into a string
-        domain_str = str(domain_name)
+        # Decode the received bytes to a string (assuming the client sent it this way)
+        domain_str = byteData.decode('utf-8')
 
         # Check if it's the file info message with the file name
         file_info_match = re.match(r'(.+)\.fileinfo\.fileupload\.yourdomain\.com', domain_str)
