@@ -36,7 +36,7 @@ while True:
         domain_name = str(msg.q.qname)
 
         # Regex search for the specific Base32 encoded string pattern in the DNS message
-        m = re.search(r'([A-Z2-7]+)\.c2\.cooploop\d+\.com', domain_name)
+        m = re.search(r'([A-Z2-7]+)\.<subdomain>\.<domain>\.com', domain_name)
 
         # If a match is found, decode the Base32 encoded string
         if m:
