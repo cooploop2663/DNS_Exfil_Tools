@@ -39,6 +39,7 @@ def create_fake_response(request, addr):
     dns_response.header.qr = 1  # This is a response
     dns_response.header.aa = 1  # Authoritative answer
     dns_response.header.ra = 1  # Recursion available
+    dns_response.header.rd = dns_request.header.rd  # Copy the recursion desired flag
 
     # Add an answer (A record) with a fake IP address (e.g., 123.123.123.123)
     fake_ip = "123.123.123.123"
