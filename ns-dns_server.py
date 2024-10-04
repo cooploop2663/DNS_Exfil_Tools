@@ -31,8 +31,14 @@ def create_fake_response(request, addr):
     # Get the queried domain name
     qname = dns_request.q.qname
 
-    # Create a fake DNS response
-    dns_response = DNSRecord(DNSRecord.header(id=dns_request.header.id, qr=1, aa=1, ra=1), q=dns_request.q)
+    # Create a DNS response with the same ID as the request
+    dns_response = DNSRecord(q=dns_request.q)
+
+    # Set the response header (qr=1 means it's a response)
+    dns_response.header.id = dns_request.header.id  # Copy the request ID
+    dns_response.header.qr = 1  # This is a response
+    dns_response.header.aa = 1  # Authoritative answer
+    dns_response.header.ra = 1  # Recursion available
 
     # Add an answer (A record) with a fake IP address (e.g., 123.123.123.123)
     fake_ip = "123.123.123.123"
