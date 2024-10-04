@@ -35,32 +35,37 @@ while True:
     # Receive data from the socket
     byteData, addr = sock.recvfrom(2048)  # buffer size is 2048 bytes
     try:
-        # Decode the received bytes to a string (assuming the client sent it this way)
-        domain_str = byteData.decode('utf-8')
+        # Check if it's the file name (file name should be sent as plain text)
+        try:
+            domain_str = byteData.decode('utf-8')  # Attempt to decode as a string
+            
+            # Check if it's the file info message with the file name
+            file_info_match = re.match(r'(.+)\.fileinfo\.fileupload\.yourdomain\.com', domain_str)
+            if file_info_match:
+                file_name = file_info_match.group(1)
+                print(f"Received file name: {file_name}")
+                continue
 
-        # Check if it's the file info message with the file name
-        file_info_match = re.match(r'(.+)\.fileinfo\.fileupload\.yourdomain\.com', domain_str)
-        if file_info_match:
-            file_name = file_info_match.group(1)
-            print(f"Received file name: {file_name}")
-            continue
+            # Check if the message is the end-of-transmission signal
+            if domain_str.startswith("end.chunk999.fileupload.yourdomain.com"):
+                print("Received end of transmission signal.")
+                if file_name:
+                    # Reassemble and save the file
+                    save_file(file_chunks, file_name)
+                    print(f"File '{file_name}' reconstructed successfully!")
+                else:
+                    print("File name not received, cannot save the file.")
+                # Reset the dictionary for the next file transfer
+                file_chunks.clear()
+                file_name = None
+                continue
 
-        # Check if the message is the end-of-transmission signal
-        if domain_str.startswith("end.chunk999.fileupload.yourdomain.com"):
-            print("Received end of transmission signal.")
-            if file_name:
-                # Reassemble and save the file
-                save_file(file_chunks, file_name)
-                print(f"File '{file_name}' reconstructed successfully!")
-            else:
-                print("File name not received, cannot save the file.")
-            # Reset the dictionary for the next file transfer
-            file_chunks.clear()
-            file_name = None
-            continue
+        except UnicodeDecodeError:
+            # If decoding fails, assume this is a binary chunk
+            pass
 
-        # Regex to extract Base32 encoded chunk and sequence number
-        chunk_match = re.search(r'([A-Z2-7]+)\.chunk(\d+)\.fileupload\.yourdomain\.com', domain_str)
+        # Process binary chunk (Base32 encoded data)
+        chunk_match = re.search(r'([A-Z2-7]+)\.chunk(\d+)\.fileupload\.yourdomain\.com', byteData.decode('utf-8', errors='ignore'))
 
         if chunk_match:
             encoded_chunk = chunk_match.group(1)
