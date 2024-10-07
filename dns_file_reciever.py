@@ -93,7 +93,7 @@ if file_name and file_md5:
     print(f"MD5 hash of the received file: {received_file_md5}")
     
     # Compare the MD5 hashes to ensure file integrity
-    if received_file_md5 == file_md5:
+    if received_file_md5.upper() == file_md5.upper():
         print("File transmission successful, hash matches!")
         
         # Save the file with the correct name and extension
@@ -102,4 +102,4 @@ if file_name and file_md5:
         print(f"File saved as {file_name}")
     else:
         print("MD5 hash mismatch! The file may have been corrupted during transmission.")
-        print(f"Expected MD5: {file_md5}, but received: {received_file_md5}")
+        print(f"Expected MD5: {file_md5.upper()}, but received: {received_file_md5.upper()}")
