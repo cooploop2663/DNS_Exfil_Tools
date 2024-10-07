@@ -12,7 +12,7 @@ UDP_PORT = 53
 # Create the UDP socket and bind it to the IP and port
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
-sock.settimeout(120)  # Set a timeout of 10 seconds for receiving data
+sock.settimeout(10)  # Set a timeout of 10 seconds for receiving data
 
 # Print the IP and port the server is listening on
 print(f"Listening on {UDP_IP}:{UDP_PORT}")
@@ -27,13 +27,6 @@ def calculate_md5(data):
     md5 = hashlib.md5()
     md5.update(data)
     return md5.hexdigest()
-
-def add_padding(base32_str):
-    """Ensures that base32 strings have the correct padding."""
-    missing_padding = len(base32_str) % 8
-    if missing_padding != 0:
-        return base32_str + '=' * (8 - missing_padding)
-    return base32_str
 
 # Listen for incoming DNS requests
 while not is_transmission_complete:
@@ -50,33 +43,33 @@ while not is_transmission_complete:
         print(f"Error decoding data: {e}")
         continue
 
-    # Check for end of transmission signal
-    if f"end.chunk999.{domain}" in data:
+    # Check for end of transmission signal (static "end" prefix)
+    if f"e.end.{domain}" in data:
         print("Received end of transmission signal.")
         is_transmission_complete = True
         continue
 
-    # Check for file info message (contains file name and md5)
-    if f"fileinfo.{domain}" in data:
+    # Check for file info message (static "fileinfo" prefix)
+    if f"f." in data:
         parts = data.split('.')
-        if len(parts) >= 3:
+        if len(parts) >= 4:
             try:
-                file_name = base64.b32decode(add_padding(parts[0])).decode('utf-8')  # Decode the file name
-                file_md5 = base64.b32decode(add_padding(parts[1])).decode('utf-8')   # Decode the expected hash
+                file_name = base64.b32decode(parts[1] + "=" * ((8 - len(parts[1]) % 8) % 8)).decode('utf-8')  # Decode the file name
+                file_md5 = base64.b32decode(parts[2] + "=" * ((8 - len(parts[2]) % 8) % 8)).decode('utf-8')   # Decode the expected hash
                 print(f"Received file name: {file_name}, Expected MD5 hash: {file_md5}")
             except Exception as e:
                 print(f"Error decoding file info: {e}")
         continue
 
-    # Extract the chunk number and data using regex (encoded stealthily)
-    match = re.match(rf'([A-Z0-9]+)\.chunk(\d+)\.{domain}', data)
+    # Extract the chunk number and data using regex (static "chunk" prefix)
+    match = re.match(rf'c(\d+)\.([A-Z0-9]+)\.{domain}', data)
     if match:
-        encoded_chunk, sequence_number = match.groups()
+        sequence_number, encoded_chunk = match.groups()
         print(f"Received chunk {sequence_number} from {addr}")
 
         try:
             # Decode the base32 encoded chunk to get the original binary data
-            chunk_data = base64.b32decode(add_padding(encoded_chunk))
+            chunk_data = base64.b32decode(encoded_chunk + "=" * ((8 - len(encoded_chunk) % 8) % 8))
             file_chunks[int(sequence_number)] = chunk_data
             
             # Print the actual chunk data (for debugging, you might want to comment this out later)
