@@ -4,6 +4,7 @@ import hashlib
 import re
 import time
 
+# sudo python3 dns_file_receiver.py
 # Assign the domain directly here
 domain = "fileupload.example.com"
 
