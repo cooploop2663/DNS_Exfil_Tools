@@ -7,6 +7,9 @@ import os
 DNS_SERVER = "dnsserver.example.com"
 DNS_PORT = 53
 
+# Assign the domain directly here
+domain = "fileupload.example.com"
+
 # File to send
 file_path = "path/to/your/file.pdf"  # Replace with the actual file path
 file_name = os.path.basename(file_path)  # Extracts the file name with extension
