@@ -5,6 +5,8 @@ import os
 import time
 import random
 
+# sudo python3 dns_file_uploader.py
+
 DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server IP
 DNS_PORT = 53
 domain = "fileupload.example.com"  # Domain to use
