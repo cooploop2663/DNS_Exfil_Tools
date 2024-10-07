@@ -46,7 +46,6 @@ def start_server():
             try:
                 byteData, addr = sock.recvfrom(2048)
             except socket.timeout:
-                print("Socket timed out waiting for data, checking global timeout...")
                 continue
 
             try:
