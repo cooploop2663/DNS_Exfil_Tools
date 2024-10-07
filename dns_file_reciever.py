@@ -3,6 +3,7 @@ import base64
 import hashlib
 import re
 
+# sudo python3 dns_file_reciever.py
 # Assign the domain directly here
 domain = "fileupload.example.com"
 
