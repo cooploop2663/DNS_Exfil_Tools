@@ -86,7 +86,6 @@ def send_file(file_path, max_delay):
     # Signal the end of transmission
     send_end_signal(DNS_SERVER, domain, max_delay)
 
-# Example usage
 file_path = input("Enter the file path to send (quotes allowed): ").strip()
 max_delay = float(input("Enter the maximum delay (in seconds) between queries: "))
 send_file(file_path, max_delay)
