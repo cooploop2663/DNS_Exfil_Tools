@@ -53,7 +53,7 @@ def send_file_info(file_name, file_md5, total_chunks, server_ip, domain, max_del
     encoded_total_chunks = base64.b32encode(str(total_chunks).encode()).decode().strip("=")
 
     query = f"f.{encoded_file_name}.{encoded_file_md5}.{encoded_total_chunks}.{domain}"
-    print(f"Sending file info: {file_name}, MD5: {file_md5}, Total Chunks: {total_chunks}")
+    print(f"Sending file info: {file_name}, MD5: {file_md5.upper()}, Total Chunks: {total_chunks}")
     send_dns_query(query, server_ip, max_delay)
 
 # Function to signal end of transmission
