@@ -61,6 +61,9 @@ def send_end_signal(server_ip, domain, max_delay):
 
 # Main client function
 def send_file(file_path, max_delay):
+    # Strip any extraneous quotes from the file path
+    file_path = file_path.strip('"').strip("'")
+
     file_name = os.path.basename(file_path)
     file_md5 = calculate_md5(file_path)
 
@@ -79,6 +82,6 @@ def send_file(file_path, max_delay):
     send_end_signal(DNS_SERVER, domain, max_delay)
 
 # Example usage
-file_path = input("Enter the file path to send: ")
+file_path = input("Enter the file path to send (quotes allowed): ").strip()
 max_delay = float(input("Enter the maximum delay (in seconds) between queries: "))
 send_file(file_path, max_delay)
