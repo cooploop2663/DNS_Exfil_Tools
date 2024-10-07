@@ -25,10 +25,10 @@ received_chunks = 0
 is_transmission_complete = False
 
 def calculate_md5(data):
-    """Calculates the MD5 hash of the given data."""
+    """Calculates the MD5 hash of the given data and returns it in uppercase."""
     md5 = hashlib.md5()
     md5.update(data)
-    return md5.hexdigest()
+    return md5.hexdigest().upper()
 
 # Listen for incoming DNS requests
 while not is_transmission_complete:
@@ -57,9 +57,9 @@ while not is_transmission_complete:
         if len(parts) >= 5:
             try:
                 file_name = base64.b32decode(parts[1] + "=" * ((8 - len(parts[1]) % 8) % 8)).decode('utf-8')  # Decode the file name
-                file_md5 = base64.b32decode(parts[2] + "=" * ((8 - len(parts[2]) % 8) % 8)).decode('utf-8')   # Decode the expected hash
+                file_md5 = base64.b32decode(parts[2] + "=" * ((8 - len(parts[2]) % 8) % 8)).decode('utf-8').upper()  # Decode and convert MD5 hash to uppercase
                 total_chunks = int(base64.b32decode(parts[3] + "=" * ((8 - len(parts[3]) % 8) % 8)).decode('utf-8'))  # Decode the total chunks
-                print(f"Received file info: {file_name}, Expected MD5 hash: {file_md5.upper()}, Total Chunks: {total_chunks}")
+                print(f"Received file info: {file_name}, Expected MD5 hash: {file_md5}, Total Chunks: {total_chunks}")
             except Exception as e:
                 print(f"Error decoding file info: {e}")
         continue
@@ -93,7 +93,7 @@ if file_name and file_md5:
     print(f"MD5 hash of the received file: {received_file_md5}")
     
     # Compare the MD5 hashes to ensure file integrity
-    if received_file_md5.upper() == file_md5.upper():
+    if received_file_md5 == file_md5:
         print("File transmission successful, hash matches!")
         
         # Save the file with the correct name and extension
@@ -102,4 +102,4 @@ if file_name and file_md5:
         print(f"File saved as {file_name}")
     else:
         print("MD5 hash mismatch! The file may have been corrupted during transmission.")
-        print(f"Expected MD5: {file_md5.upper()}, but received: {received_file_md5.upper()}")
+        print(f"Expected MD5: {file_md5}, but received: {received_file_md5}")
