@@ -12,7 +12,7 @@ UDP_PORT = 53
 # Create the UDP socket and bind it to the IP and port
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
-sock.settimeout(120)  # Set a timeout of 120 seconds for receiving data
+sock.settimeout(10)  # Set a timeout of 10 seconds for receiving data
 
 # Print the IP and port the server is listening on
 print(f"Listening on {UDP_IP}:{UDP_PORT}")
@@ -20,6 +20,8 @@ print(f"Listening on {UDP_IP}:{UDP_PORT}")
 file_chunks = {}
 file_md5 = ""
 file_name = ""
+total_chunks = 0
+received_chunks = 0
 is_transmission_complete = False
 
 def calculate_md5(data):
@@ -65,7 +67,9 @@ while not is_transmission_complete:
     match = re.match(rf'c(\d+)\.([A-Z0-9]+)\.{domain}', data)
     if match:
         sequence_number, encoded_chunk = match.groups()
-        print(f"Received chunk {sequence_number} from {addr}")
+        received_chunks += 1
+        total_chunks = max(total_chunks, int(sequence_number) + 1)  # Track the total number of chunks
+        print(f"Received chunk {received_chunks}/{total_chunks} from {addr}")
 
         try:
             # Decode the base32 encoded chunk to get the original binary data
