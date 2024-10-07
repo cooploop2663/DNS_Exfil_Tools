@@ -12,7 +12,7 @@ UDP_PORT = 53
 # Create the UDP socket and bind it to the IP and port
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
-sock.settimeout(10)  # Set a timeout of 10 seconds for receiving data
+sock.settimeout(600)  # Set a timeout of 600 seconds for receiving data
 
 # Print the IP and port the server is listening on
 print(f"Listening on {UDP_IP}:{UDP_PORT}")
