@@ -54,11 +54,12 @@ while not is_transmission_complete:
     # Check for file info message (static "fileinfo" prefix)
     if f"f." in data:
         parts = data.split('.')
-        if len(parts) >= 4:
+        if len(parts) >= 5:
             try:
                 file_name = base64.b32decode(parts[1] + "=" * ((8 - len(parts[1]) % 8) % 8)).decode('utf-8')  # Decode the file name
                 file_md5 = base64.b32decode(parts[2] + "=" * ((8 - len(parts[2]) % 8) % 8)).decode('utf-8')   # Decode the expected hash
-                print(f"Received file name: {file_name}, Expected MD5 hash: {file_md5}")
+                total_chunks = int(base64.b32decode(parts[3] + "=" * ((8 - len(parts[3]) % 8) % 8)).decode('utf-8'))  # Decode the total chunks
+                print(f"Received file info: {file_name}, Expected MD5 hash: {file_md5}, Total Chunks: {total_chunks}")
             except Exception as e:
                 print(f"Error decoding file info: {e}")
         continue
@@ -68,7 +69,6 @@ while not is_transmission_complete:
     if match:
         sequence_number, encoded_chunk = match.groups()
         received_chunks += 1
-        total_chunks = max(total_chunks, int(sequence_number) + 1)  # Track the total number of chunks
         print(f"Received chunk {received_chunks}/{total_chunks} from {addr}")
 
         try:
@@ -76,8 +76,6 @@ while not is_transmission_complete:
             chunk_data = base64.b32decode(encoded_chunk + "=" * ((8 - len(encoded_chunk) % 8) % 8))
             file_chunks[int(sequence_number)] = chunk_data
             
-            # Print the actual chunk data (for debugging, you might want to comment this out later)
-            print(f"Chunk {sequence_number} data: {chunk_data[:50]}...")  # Display first 50 bytes of the chunk
         except Exception as e:
             print(f"Error decoding chunk {sequence_number}: {e}")
 
