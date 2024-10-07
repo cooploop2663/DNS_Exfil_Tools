@@ -59,7 +59,7 @@ while not is_transmission_complete:
                 file_name = base64.b32decode(parts[1] + "=" * ((8 - len(parts[1]) % 8) % 8)).decode('utf-8')  # Decode the file name
                 file_md5 = base64.b32decode(parts[2] + "=" * ((8 - len(parts[2]) % 8) % 8)).decode('utf-8')   # Decode the expected hash
                 total_chunks = int(base64.b32decode(parts[3] + "=" * ((8 - len(parts[3]) % 8) % 8)).decode('utf-8'))  # Decode the total chunks
-                print(f"Received file info: {file_name}, Expected MD5 hash: {file_md5}, Total Chunks: {total_chunks}")
+                print(f"Received file info: {file_name}, Expected MD5 hash: {file_md5.upper()}, Total Chunks: {total_chunks}")
             except Exception as e:
                 print(f"Error decoding file info: {e}")
         continue
