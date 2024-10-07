@@ -19,7 +19,7 @@ def start_server():
     # Create the UDP socket and bind it to the IP and port
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, UDP_PORT))
-    sock.settimeout(60)  # Set a timeout of 60 seconds for receiving data
+    sock.settimeout(600)  # Set a timeout of 600 seconds for receiving data
     
     print(f"Listening on {UDP_IP}:{UDP_PORT}")
 
