@@ -5,7 +5,6 @@ import os
 import time
 import random
 
-# sudo python3 dns_file_uploader.py
 DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server IP
 DNS_PORT = 53
 domain = "fileupload.example.com"  # Domain to use
@@ -42,6 +41,8 @@ def send_file_chunks(file_path, server_ip, domain, max_delay, total_chunks):
             print(f"Sending chunk {chunk_number + 1}/{total_chunks}")
             send_dns_query(query, server_ip, max_delay)
 
+    print("All chunks have been sent successfully.")
+
 # Function to send file information (filename, MD5 hash, and total chunks)
 def send_file_info(file_name, file_md5, total_chunks, server_ip, domain, max_delay):
     # Use static "fileinfo" prefix for the file info query
@@ -59,6 +60,7 @@ def send_end_signal(server_ip, domain, max_delay):
     query = f"e.end.{domain}"
     print("Sending end of transmission signal")
     send_dns_query(query, server_ip, max_delay)
+    print("File transmission complete!")
 
 # Main client function
 def send_file(file_path, max_delay):
