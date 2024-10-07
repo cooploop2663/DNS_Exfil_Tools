@@ -59,9 +59,13 @@ while not is_transmission_complete:
     if fileinfo_signal in data:
         parts = data.split('.')
         if len(parts) >= 3:
-            file_name = base64.b32decode(parts[0]).decode('utf-8')  # Decode the file name
-            file_md5 = base64.b32decode(parts[1]).decode('utf-8')   # Decode the expected hash
-            print(f"Received file name: {file_name}, Expected MD5 hash: {file_md5}")
+            try:
+                # Decode the base32 encoded file name and hash (handle padding)
+                file_name = base64.b32decode(parts[0] + '====').decode('utf-8')  # Add padding if necessary
+                file_md5 = base64.b32decode(parts[1] + '====').decode('utf-8')  # Add padding if necessary
+                print(f"Received file name: {file_name}, Expected MD5 hash: {file_md5}")
+            except Exception as e:
+                print(f"Error decoding fileinfo: {e}")
         continue
 
     # Extract the chunk number and data using regex (encoded stealthily)
