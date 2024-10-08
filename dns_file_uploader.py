@@ -7,9 +7,9 @@ import random
 
 # sudo python3 dns_file_uploader.py
 
-DNS_SERVER = "your.dns.server.ip"  # Replace with actual DNS server IP
+DNS_SERVER = "your.dns.server"  # Replace with actual DNS server IP or domain name
 DNS_PORT = 53
-domain = "fileupload.example.com"  # Domain to use
+domain = "fileupload.example.com"  # subomain to use
 
 # Function to calculate MD5 hash of a file
 def calculate_md5(file_path):
