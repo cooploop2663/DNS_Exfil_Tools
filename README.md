@@ -130,7 +130,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
    ```
   **EXTRA NOTE:**
   - The '=' is added by the script when it tries to decrypt it.
-  - The domain string KRCVGVCJJZDSAVCFKNKESTSHEAYTEMY.c2.fakedomain.com contains 49 characters.
+  - The domain string 'KRCVGVCJJZDSAVCFKNKESTSHEAYTEMY.c2.fakedomain.com' contains 49 characters.
 ---
 
 **Note:** All other tools not documented here are works in progress.
