@@ -8,7 +8,7 @@ UDP_IP = "0.0.0.0"
 UDP_PORT = 53
 
 # Domain to match against
-DOMAIN = "c2.fakedomain.com"
+DOMAIN = "fileupload.example.com"
 
 # Create a UDP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
