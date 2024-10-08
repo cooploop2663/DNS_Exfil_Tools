@@ -87,6 +87,9 @@ These tools are intended solely for **security testing purposes**. I am not resp
     - **Random delay:** Set a random delay in seconds
 
 ### ns_dns_server.py (Unix - Server)
+**IMPORTANT NOTE:**
+- Requires base32 payload: Instructions for that below.
+[Base32 Payload Instructions for ns_dns_server.py (Client)](#base32-payload-instructions-for-ns_dns_serverpy-client)
 
 1. Update the `DOMAIN` parameter in the script to:  
    ```bash
