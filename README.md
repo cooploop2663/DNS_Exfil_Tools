@@ -9,11 +9,11 @@ These tools are intended solely for **security testing purposes**. I am not resp
 ## Table of Contents
 1. [Infrastructure Setup](#infrastructure-setup)
 2. [Tool Usage](#tool-usage)
-    - [dns_file_receiver.py (Unix - Server)](#dns-file-receiver-unix-server)
-    - [dns_file_uploader.ps1 (Windows - Client)](#dns-file-uploader-windows-client)
-    - [dns_file_uploader.py (Unix - Client)](#dns-file-uploader-unix-client)
-    - [ns_dns_server.py (Unix - Server)](#ns-dns-server-unix)
-3. [Base32 Payload Instructions for ns_dns_server.py (Client)](#base32-payload-instructions)
+    - [dns_file_receiver.py (Unix - Server)](#dns-file-receiver-unix---server)
+    - [dns_file_uploader.ps1 (Windows - Client)](#dns-file-uploader-windows---client)
+    - [dns_file_uploader.py (Unix - Client)](#dns-file-uploader-unix---client)
+    - [ns_dns_server.py (Unix - Server)](#ns-dns-server-unix---server)
+3. [Base32 Payload Instructions for ns_dns_server.py (Client)](#base32-payload-instructions-for-ns_dns_serverpy-client)
 
 ---
 
