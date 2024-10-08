@@ -7,6 +7,9 @@ from dnslib import DNSRecord, RR, QTYPE, A
 UDP_IP = "0.0.0.0"
 UDP_PORT = 53
 
+# Domain to match against
+DOMAIN = "c2.fakedomain.com"
+
 # Create a UDP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
@@ -67,7 +70,8 @@ while True:
         processed_queries.add(domain_name)
 
         # Regex search for the specific Base32 encoded string pattern in the DNS message
-        m = re.search(r'([A-Z2-7]+)\.<subdomain>\.<domain>\.com', domain_name)
+        # Uses the DOMAIN variable for flexibility
+        m = re.search(r'([A-Z2-7]+)\.' + re.escape(DOMAIN), domain_name)
 
         # If a match is found, decode the Base32 encoded string
         if m:
