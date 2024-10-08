@@ -9,11 +9,11 @@ These tools are intended solely for **security testing purposes**. I am not resp
 ## Table of Contents
 1. [Infrastructure Setup](#infrastructure-setup)
 2. [Tool Usage](#tool-usage)
-    - [DNS File Receiver (Server - Unix)](#dns-file-receiver-unix-server)
-    - [DNS File Uploader (Client - Windows)](#dns-file-uploader-windows-client)
-    - [DNS File Uploader (Client - Unix)](#dns-file-uploader-unix-client)
-    - [NS DNS Server (Unix)](#ns-dns-server-unix)
-3. [Base32 Payload Instructions](#base32-payload-instructions)
+    - [dns_file_receiver.py (Unix - Server)](#dns-file-receiver-unix-server)
+    - [dns_file_uploader.ps1 (Windows - Client)](#dns-file-uploader-windows-client)
+    - [dns_file_uploader.py (Unix - Client)](#dns-file-uploader-unix-client)
+    - [ns_dns_server.py (Unix - Server)](#ns-dns-server-unix)
+3. [Base32 Payload Instructions for ns_dns_server.py (Client)](#base32-payload-instructions)
 
 ---
 
@@ -40,7 +40,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
 
 ## Tool Usage
 
-### DNS File Receiver (Unix - Server)
+### dns_file_receiver.py (Unix - Server)
 
 1. Edit the `domain` parameter in the script to:  
    ```bash
@@ -53,7 +53,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
    sudo python3 dns_file_receiver.py
    ```
 
-### DNS File Uploader (Windows - Client)
+### dns_file_uploader.ps1 (Windows - Client)
 
 1. Update the `domain` parameter in the script to:  
    ```bash
@@ -68,7 +68,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
     - **Domain OR IP:** Either the AWS server IP (`123.123.123.123`) or domain name (`fakedomain.com`)
     - **Random delay:** Set a random delay in seconds
 
-### DNS File Uploader (Unix - Client)
+### dns_file_uploader.py (Unix - Client)
 
 1. Update the `DNS_SERVER` parameter to:  
    - AWS server IP (`123.123.123.123`) or domain name (`fakedomain.com`)
@@ -86,7 +86,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
     - **File path:** (quotes can be used)
     - **Random delay:** Set a random delay in seconds
 
-### NS DNS Server (Unix)
+### ns_dns_server.py (Unix - Server)
 
 1. Modify the regex search line in the script:  
    ```python
@@ -101,7 +101,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
 
 ---
 
-## Base32 Payload Instructions
+## Base32 Payload Instructions for ns_dns_server.py (Client)
 
 1. Use [CyberChef](https://gchq.github.io/CyberChef/#recipe=To_Base32('A-Z2-7%3D')) to create a Base32 payload.
    
