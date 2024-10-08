@@ -147,4 +147,4 @@ These tools are intended solely for **security testing purposes**. I am not resp
   - The '=' is added by the script when it tries to decrypt it.
 ---
 
-**Note:** All other tools not documented here are works in progress.
+**Note:** All other tools not documented here are works in progress (WIPs).
