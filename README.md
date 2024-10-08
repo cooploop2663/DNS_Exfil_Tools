@@ -46,7 +46,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
    ```bash
    c2.fakedomain.com
    ```
-2. Adjust the `SOCKET_TIMEOUT` to an appropriate duration in seconds. This determines how long the script will stay active, waiting for client connections.
+2. Adjust the `SOCKET_TIMEOUT` AND the `SOCKET_CHECK_INTERVAL` variables to an appropriate duration in seconds. This determines how long the script will stay active, waiting for client connections. Best to pair it with the delay you set in the uploader scripts.
 
 3. Run the script:  
    ```bash
