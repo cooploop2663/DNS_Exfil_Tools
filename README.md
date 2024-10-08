@@ -86,7 +86,7 @@ These tools are intended solely for **security testing purposes**. I am not resp
     - **Random delay:** Set a random delay in seconds
   
   **EXTRA NOTE:**
-  - The scripts with `(stored ip)` in the name contain a variable that stores the IP of the attacker domain name. The normal scripts perform lookups everytime a chunk is sent. 
+  - The scripts with `ip_stored_*` in the name contain a variable that stores the IP of the attacker domain name when it is looked up the first time. The normal scripts perform lookups everytime a chunk is sent. 
 
 ### ns_dns_server.py (Unix - Server)
 **IMPORTANT NOTE:**
