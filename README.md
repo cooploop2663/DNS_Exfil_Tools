@@ -28,12 +28,12 @@ These tools are intended solely for **security testing purposes**. I am not resp
 - Cloudflare Domain: `fakedomain.com`
 
 **Cloudflare DNS Configuration:**
-1. Create an NS record:  
-   **Name:** `c2.fakedomain.com`  
-2. Create an A record for C2:  
-   **Name:** `c2`  
+1. Create an NS record for ns1.fakedomain.com:  
+   **Name:** `ns.fakedomain.com`  
+2. Create an A record for ns:  
+   **Name:** `ns`  
    **IPv4 address:** `123.123.123.123`  
-3. Create an A record for `example.com`:  
+3. Create an A record for `fakedomain.com`:  
    **IPv4 address:** `123.123.123.123`
 
 ---
