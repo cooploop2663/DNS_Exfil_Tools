@@ -4,13 +4,13 @@ import hashlib
 import re
 import time
 
-# sudo python3 dns_file_receiver.py
 # Assign the domain directly here
 domain = "fileupload.example.com"
 
 UDP_IP = "0.0.0.0"
 UDP_PORT = 53
 SOCKET_TIMEOUT = 600  # Total timeout in seconds (600 = 10 minutes)
+SOCKET_CHECK_INTERVAL = 10  # Check for data every 10 seconds
 
 def calculate_md5(data):
     """Calculates the MD5 hash of the given data and returns it in uppercase."""
@@ -22,11 +22,10 @@ def start_server():
     # Create the UDP socket and bind it to the IP and port
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, UDP_PORT))
-    sock.settimeout(10)  # Set a short timeout (10 seconds) for socket checks
+    sock.settimeout(SOCKET_CHECK_INTERVAL)  # Set a short timeout for socket checks
 
     print(f"Listening on {UDP_IP}:{UDP_PORT}")
 
-    start_time = time.time()  # Track the start time
     while True:
         file_chunks = {}
         file_md5 = ""
@@ -34,19 +33,21 @@ def start_server():
         total_chunks = 0
         received_chunks = 0
         is_transmission_complete = False
+        last_activity_time = time.time()  # Track the last time data was received
 
         # Check for global timeout
         while not is_transmission_complete:
             current_time = time.time()
-            if current_time - start_time > SOCKET_TIMEOUT:
+            if current_time - last_activity_time > SOCKET_TIMEOUT:
                 print("Global timeout reached, shutting down the server.")
                 sock.close()
                 return  # Exit the script
 
             try:
                 byteData, addr = sock.recvfrom(2048)
+                last_activity_time = time.time()  # Reset timeout on receiving data
             except socket.timeout:
-                continue
+                continue  # No data received, continue waiting for new data
 
             try:
                 # Since we are dealing with binary data, do not decode it as utf-8
@@ -115,7 +116,7 @@ def start_server():
                 print(f"Expected MD5: {file_md5}, but received: {received_file_md5}")
 
         # Reset the start time to keep waiting for new connections
-        start_time = time.time()
+        last_activity_time = time.time()
         print("Waiting for new connection...")
 
 
