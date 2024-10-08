@@ -54,7 +54,6 @@ These tools are intended solely for **security testing purposes**. I am not resp
    ```
 
 ### dns_file_uploader.ps1 (Windows - Client)
-
 1. Update the `domain` parameter in the script to:  
    ```bash
    c2.fakedomain.com
@@ -85,6 +84,9 @@ These tools are intended solely for **security testing purposes**. I am not resp
 4. Follow the prompts:
     - **File path:** (quotes can be used)
     - **Random delay:** Set a random delay in seconds
+  
+  **EXTRA NOTE:**
+  - The scripts with `(stored ip)` in the name contain a variable that stores the IP of the attacker domain name. The normal scripts perform lookups everytime a chunk is sent. 
 
 ### ns_dns_server.py (Unix - Server)
 **IMPORTANT NOTE:**
