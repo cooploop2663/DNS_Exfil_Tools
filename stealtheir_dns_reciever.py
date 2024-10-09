@@ -21,6 +21,7 @@ def calculate_md5(data):
 def decompress_and_decode(encoded_data):
     """Decode base32-encoded data and decompress it."""
     try:
+        # Handle base32 padding, as needed
         decoded_data = base64.b32decode(encoded_data + "=" * ((8 - len(encoded_data) % 8) % 8))
         decompressed_data = zlib.decompress(decoded_data)
         return decompressed_data
@@ -95,6 +96,8 @@ def start_server():
                     chunk_data = decompress_and_decode(encoded_chunk.replace(".", ""))
                     if chunk_data:
                         file_chunks[int(sequence_number)] = chunk_data
+                    else:
+                        print(f"Error: Chunk {sequence_number} is empty.")
                 except Exception as e:
                     print(f"Error decoding chunk {sequence_number}: {e}")
 
@@ -102,8 +105,13 @@ def start_server():
         if file_name and file_md5 and is_transmission_complete:
             print("Reassembling the file...")
             # Sort the chunks by sequence number
-            ordered_chunks = [file_chunks[i] for i in sorted(file_chunks.keys())]
-            
+            ordered_chunks = []
+            for i in range(total_chunks):
+                if i in file_chunks:
+                    ordered_chunks.append(file_chunks[i])
+                else:
+                    print(f"Error: Missing chunk {i}.")
+
             # Concatenate the chunks in the correct order
             file_data = b''.join(ordered_chunks)
             
