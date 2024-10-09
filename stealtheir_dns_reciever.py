@@ -95,6 +95,9 @@ def start_server():
                 try:
                     chunk_data = decompress_and_decode(encoded_chunk.replace(".", ""))
                     if chunk_data:
+                        chunk_md5 = calculate_chunk_md5(chunk_data)
+                        print(f"Server: MD5 of chunk {sequence_number}: {chunk_md5}")
+
                         file_chunks[int(sequence_number)] = chunk_data
                     else:
                         print(f"Error: Chunk {sequence_number} is empty.")
